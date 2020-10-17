@@ -18,6 +18,32 @@
 
 
     switch($action) {
+
+        case "mostrarFormularioLogin";
+            echo '<h1>Iniciar sesión</h1>
+            <form action="index.php" method="get">
+            Usuario: <input type="text" name="user"><br>
+            <input type="hidden" name="action" value="procesarLogin">
+            Contraseña: <input type="text" name="passwd"></br>
+            <input type="submit">
+            </form>';
+        break;
+
+        case "procesarLogin":
+            $user = $_REQUEST["user"];
+            $passwd = $_REQUEST["passwd"];
+
+            $result = $db->query("SELECT id_usuario FROM users WHERE id_usuario = '$user' AND passwd = '$passwd'");
+
+            if ($result->num_rows == 1) {
+                $_SESSION["id_usuario"] = $result->fetch_object()->id_usuario;
+            } else {
+                echo "Nombre de usuario o contraseña incorrectos";
+            }
+
+        break;
+
+
         case "mostrarListaLibros":
         echo "<h1>Biblioteca</h1>"; 
         if ($result = $db->query("SELECT * FROM libros")) {
