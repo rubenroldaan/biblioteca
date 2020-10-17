@@ -7,12 +7,20 @@
 
 <body>
     <?php
+
+    session_start();
     $db = new mysqli("localhost", "root", "", "biblioteca");
+    if (isset($_REQUEST["action"])) {
+        $action = $_REQUEST["action"];
+    } else {
+        $action = "mostrarListaLibros";
+    }
 
-    if (!isset($_REQUEST["action"])) {
 
+    switch($action) {
+        case "mostrarListaLibros":
+        echo "<h1>Biblioteca</h1>"; 
         if ($result = $db->query("SELECT * FROM libros")) {
-
             if ($result->num_rows != 0) {
                 echo "<a href='index.php?action=formularioAltaLibros'>Nuevo</a>";
                 echo "<form action='index.php'><input type='hidden' name='action' value='buscarLibros'>
@@ -42,10 +50,7 @@
                 echo '<a href="index.php?action=formularioAltaLibros">Nuevo</a>';
             }
         }
-    } else {
-
-        switch ($_REQUEST["action"]) {
-
+        break;
             case "formularioAltaLibros":
                 echo '<h1>Formulario de alta de libros</h1>
                 <form action = "index.php" method = "get">
@@ -231,9 +236,6 @@
                 echo "Error 404: página no encontrada";
                 break;
         } // switch
-
-
-    } // else
 
     ?>
 
