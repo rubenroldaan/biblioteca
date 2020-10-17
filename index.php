@@ -178,7 +178,6 @@
                                                 INNER JOIN escriben ON autores.id_autor = escriben.id_autor
                                                 INNER JOIN libros ON libros.id_libro = escriben.id_libro
                                                 WHERE libros.id_libro = '$idLibro'");
-                    
                     $listaAutoresLibro = array();
                     while ($autor = $autoresLibro->fetch_object()) {
                         $listaAutoresLibro[] = $autor->id_autor;
