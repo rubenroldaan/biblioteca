@@ -13,7 +13,7 @@
     if (isset($_REQUEST["action"])) {
         $action = $_REQUEST["action"];
     } else {
-        $action = "mostrarFormularioLogin";
+        $action = "mostrarListaLibros";
     }
 
 
@@ -33,10 +33,13 @@
             $user = $_REQUEST["user"];
             $passwd = $_REQUEST["passwd"];
 
-            $result = $db->query("SELECT id_usuario FROM users WHERE id_usuario = '$user' AND passwd = '$passwd'");
+            $result = $db->query("SELECT * FROM users WHERE nombre = '$user' AND passwd = '$passwd'");
+            $usuario = $result->fetch_object();
 
             if ($result->num_rows == 1) {
-                $_SESSION["id_usuario"] = $result->fetch_object()->id_usuario;
+                $_SESSION["id_usuario"] = $usuario->id_user;
+                $_SESSION["nombre_usuario"] = $usuario->nombre;
+                echo "<script>location.href = 'index.php'</script>";
             } else {
                 echo "Nombre de usuario o contraseña incorrectos";
             }
@@ -46,9 +49,15 @@
 
         case "mostrarListaLibros":
         echo "<h1>Biblioteca</h1>"; 
+        if (isset($_SESSION["id_usuario"])) {
+            echo "Hola, ".$_SESSION['nombre_usuario']."<br>";
+            echo "<a href='index.php?action=cerrarSesion'>Cerrar sesión</a><br>";
+            echo "<a href='index.php?action=formularioAltaLibros'>Nuevo</a>";
+        } else {
+            echo "<p><a href='index.php?action=mostrarFormularioLogin'>Login</a></p>";
+        }
         if ($result = $db->query("SELECT * FROM libros")) {
             if ($result->num_rows != 0) {
-                echo "<a href='index.php?action=formularioAltaLibros'>Nuevo</a>";
                 echo "<form action='index.php'><input type='hidden' name='action' value='buscarLibros'>
               <input type='text' name='textoBusqueda'>
               <input type='submit'>
@@ -66,8 +75,10 @@
                     echo "<td>" . $fila->titulo . "</td>";
                     echo "<td>" . $fila->genero . "</td>";
                     echo "<td>" . $fila->numPaginas . "</td>";
-                    echo "<td><a href='index.php?action=formularioModificarLibro&idLibro=" . $fila->id_libro . "'>Modificar</td>";
-                    echo "<td><a href='index.php?action=borrarLibro&idLibro=" . $fila->id_libro . "'>Borrar</a></td>";
+                    if (isset($_SESSION["id_usuario"])) {
+                        echo "<td><a href='index.php?action=formularioModificarLibro&idLibro=" . $fila->id_libro . "'>Modificar</td>";
+                        echo "<td><a href='index.php?action=borrarLibro&idLibro=" . $fila->id_libro . "'>Borrar</a></td>";
+                    } 
                     echo "</tr>";
                 }
                 echo "</table>";
@@ -78,28 +89,33 @@
         }
         break;
             case "formularioAltaLibros":
-                echo '<h1>Formulario de alta de libros</h1>
-                <form action = "index.php" method = "get">
-                    Título:<input type="text" name="titulo"><br>
-                    Género:<input type="text" name="genero"><br>
-                    País:<input type="text" name="pais"><br>
-                    Año:<input type="text" name="anyo"><br>
-                    Número de páginas:<input type="text" name="numPaginas"><br>
-                Autor:<select name="autor[]" size="3" multiple="true">';
-                if ($result = $db->query("SELECT * FROM autores")) {
-                    if ($result->num_rows != 0) {
-                        while ($fila = $result->fetch_object()) {
-                            echo '<option value="' . $fila->id_autor . '">' . $fila->nombre . ' ' . $fila->apellidos . '</option>';
+                if (isset($_SESSION["id_usuario"])) {
+                        echo '<h1>Formulario de alta de libros</h1>
+                    <form action = "index.php" method = "get">
+                        Título:<input type="text" name="titulo"><br>
+                        Género:<input type="text" name="genero"><br>
+                        País:<input type="text" name="pais"><br>
+                        Año:<input type="text" name="anyo"><br>
+                        Número de páginas:<input type="text" name="numPaginas"><br>
+                    Autor:<select name="autor[]" size="3" multiple="true">';
+                    if ($result = $db->query("SELECT * FROM autores")) {
+                        if ($result->num_rows != 0) {
+                            while ($fila = $result->fetch_object()) {
+                                echo '<option value="' . $fila->id_autor . '">' . $fila->nombre . ' ' . $fila->apellidos . '</option>';
+                            }
+                        } else {
+                            echo '<option disabled>No se han encontrado autores</option>';
                         }
-                    } else {
-                        echo '<option disabled>No se han encontrado autores</option>';
                     }
+                    echo '</select>
+                        <a href="index.php?action=formularioAltaAutores">Nuevo autor</a>
+                        <input type="hidden" name="action" value="insertarLibro"><br><br>
+                        <input type="submit">
+                        </form>';
+                } else {
+                    echo "No tienes permisos para hacer esto!";
                 }
-                echo '</select>
-                    <a href="index.php?action=formularioAltaAutores">Nuevo autor</a>
-                    <input type="hidden" name="action" value="insertarLibro"><br><br>
-                    <input type="submit">
-                    </form>';
+                
                 break;
 
             case "insertarLibro":
@@ -170,12 +186,17 @@
                 break;
 
             case 'formularioAltaAutores':
-                echo '<h1>Formulario de alta de autores</h1>
+                if (isset($_SESSIOJ["id_usuario"])) {
+                    echo '<h1>Formulario de alta de autores</h1>
                     <form action = "index.php" method = "get">
                         Nombre: <input type="text" name="nombre"><br>
                         Apellidos: <input type="text" name="apellidos"><br><br>
                         <input type="hidden" name="action" value="insertarAutor">
                         <input type="submit">';
+                } else {
+                    echo "No tienes permisos para hacer esto!";
+                }
+                
                 break;
 
             case 'insertarAutor':
@@ -191,7 +212,8 @@
                 break;
 
             case 'formularioModificarLibro':
-                echo '<h1>Modificación de libros</h1>';
+                if (isset($_SESSION["id_usuario"])) {
+                    echo '<h1>Modificación de libros</h1>';
                 $idLibro = $_REQUEST['idLibro'];
                 if ($result = $db->query("SELECT * FROM libros WHERE id_libro = '$idLibro'")) {
                     $libro = $result->fetch_object();
@@ -225,6 +247,10 @@
                 } else {
                     echo 'No se ha podido modificar el libro. Por favor, inténtelo de nuevo más tarde.';
                 }
+                } else {
+                    echo "No tienes permisos para hacer esto!";
+                }
+                
                 break;
             
             case 'modificarLibro':
@@ -256,6 +282,12 @@
                 }
                 echo "<p><a href='index.php'>Volver</a></p>"; 
 
+            break;
+
+            case 'cerrarSesion':
+                session_destroy();
+                echo "Sesión cerrada.<br>
+                      <a href='index.php'>Volver</a>";
             break;
 
             default:
